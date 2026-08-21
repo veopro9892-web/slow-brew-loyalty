@@ -24,11 +24,13 @@ export async function POST(request: NextRequest) {
 
   const req = await approveRequest(token);
   if (!req) {
+    console.log(`[approve] token=${token} → NOT FOUND`);
     return NextResponse.json({ error: 'Request not found or already resolved' }, { status: 404 });
   }
 
   // Auto-approve: add the stamp to the customer's server record
   const result = await serverAddStamp(req.customerId);
+  console.log(`[approve] token=${token} customerId=${req.customerId} stamps=${result.customer?.stamps}`);
 
   // Don't leak customerId — only return status
   return NextResponse.json({

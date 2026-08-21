@@ -9,5 +9,6 @@ export async function GET(request: NextRequest) {
   }
 
   const req = await getRequestByCustomerId(customerId);
+  console.log(`[status] customerId=${customerId} → ${req ? req.status : 'null'}`);
   return NextResponse.json({ request: req });
 }

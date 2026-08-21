@@ -53,6 +53,15 @@ export async function ensureSchema() {
     )
   `;
 
+  // Seed default offers if table is empty
+  const offerCount: any[] = await sql`SELECT COUNT(*)::int as cnt FROM offers`;
+  if (offerCount[0].cnt === 0) {
+    await sql`INSERT INTO offers (level, title, description, icon) VALUES (8, 'Free Cookie!', 'Enjoy a free cookie of your choice with your next visit!', '🍪')`;
+    await sql`INSERT INTO offers (level, title, description, icon) VALUES (16, 'Free Pastry!', 'Pick any pastry on the house! You''ve earned it.', '🥐')`;
+    await sql`INSERT INTO offers (level, title, description, icon) VALUES (24, 'Free Drink!', 'Any drink on the menu, completely free. You''re royalty now!', '👑')`;
+    await sql`INSERT INTO offers (level, title, description, icon) VALUES (30, 'The Grand Prize!', 'You''ve reached the pinnacle! Enjoy a free drink + cookie + pastry combo! Plus, your name goes on our Wall of Legends!', '🏆')`;
+  }
+
   await sql`
     CREATE TABLE IF NOT EXISTS stamp_requests (
       id TEXT PRIMARY KEY,

@@ -15,20 +15,20 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === 'deny') {
-    const req = denyRequest(token);
+    const req = await denyRequest(token);
     if (!req) {
       return NextResponse.json({ error: 'Request not found or already resolved' }, { status: 404 });
     }
     return NextResponse.json({ success: true, status: 'denied' });
   }
 
-  const req = approveRequest(token);
+  const req = await approveRequest(token);
   if (!req) {
     return NextResponse.json({ error: 'Request not found or already resolved' }, { status: 404 });
   }
 
   // Auto-approve: add the stamp to the customer's server record
-  const result = serverAddStamp(req.customerId);
+  const result = await serverAddStamp(req.customerId);
 
   // Don't leak customerId — only return status
   return NextResponse.json({

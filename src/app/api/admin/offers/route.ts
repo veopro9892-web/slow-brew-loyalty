@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const adminError = requireAdmin(request);
   if (adminError) return adminError;
 
-  const offers = serverGetOffers();
+  const offers = await serverGetOffers();
   return NextResponse.json({ offers });
 }
 
@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
   const { action, offer, level } = body;
 
   if (action === 'delete' && typeof level === 'number') {
-    const offers = serverDeleteOffer(level);
+    const offers = await serverDeleteOffer(level);
     return NextResponse.json({ offers });
   }
 
   if (offer?.level && offer?.title) {
-    const offers = serverUpsertOffer(offer as Offer);
+    const offers = await serverUpsertOffer(offer as Offer);
     return NextResponse.json({ offers });
   }
 

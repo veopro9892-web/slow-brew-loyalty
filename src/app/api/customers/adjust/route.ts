@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'customerId and delta required' }, { status: 400 });
   }
 
-  const result = serverAdjustStamps(customerId, delta);
+  const result = await serverAdjustStamps(customerId, delta);
   if (!result.customer) {
     return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
   }

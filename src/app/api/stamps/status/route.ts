@@ -8,6 +8,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing customerId' }, { status: 400 });
   }
 
-  const req = getRequestByCustomerId(customerId);
+  const req = await getRequestByCustomerId(customerId);
   return NextResponse.json({ request: req });
 }

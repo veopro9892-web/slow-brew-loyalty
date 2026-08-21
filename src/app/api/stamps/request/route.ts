@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   // createRequest validates customerId against server DB and rate-limits
-  const req = createRequest(customerId);
+  const req = await createRequest(customerId);
   if (!req) {
     return NextResponse.json({ error: 'Invalid customer or too many pending requests' }, { status: 400 });
   }

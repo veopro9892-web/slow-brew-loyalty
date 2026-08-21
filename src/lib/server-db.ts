@@ -1,101 +1,119 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { getSql, ensureSchema } from './db';
 import { Customer, Reward, Offer, DEFAULT_OFFERS } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-function getDataDir(): string {
-  const dir = join(process.cwd(), 'data');
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  return dir;
+// --- Helpers ---
+
+function rowToCustomer(row: any, rewards: any[]): Customer {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    stamps: row.stamps,
+    createdAt: row.created_at,
+    lastVisit: row.last_visit,
+    rewards: rewards.map((r: any) => ({
+      id: r.id,
+      level: r.level,
+      title: r.title,
+      description: r.description,
+      code: r.code,
+      redeemed: r.redeemed,
+      redeemedAt: r.redeemed_at,
+      unlockedAt: r.unlocked_at,
+    })),
+  };
 }
 
-function getCustomersPath(): string {
-  return join(getDataDir(), 'customers.json');
-}
-
-function getOffersPath(): string {
-  return join(getDataDir(), 'offers.json');
+function rowToReward(r: any): Reward {
+  return {
+    id: r.id,
+    level: r.level,
+    title: r.title,
+    description: r.description,
+    code: r.code,
+    redeemed: r.redeemed,
+    redeemedAt: r.redeemed_at,
+    unlockedAt: r.unlocked_at,
+  };
 }
 
 // --- Customers ---
 
-function readCustomers(): Customer[] {
-  const path = getCustomersPath();
-  if (!existsSync(path)) return [];
-  try {
-    return JSON.parse(readFileSync(path, 'utf-8')) as Customer[];
-  } catch {
-    return [];
+export async function serverGetAllCustomers(): Promise<Customer[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows: any[] = await sql`SELECT * FROM customers ORDER BY stamps DESC`;
+  const customers: Customer[] = [];
+  for (const row of rows) {
+    const rewards: any[] = await sql`SELECT * FROM rewards WHERE customer_id = ${row.id} ORDER BY level`;
+    customers.push(rowToCustomer(row, rewards));
   }
+  return customers;
 }
 
-function writeCustomers(customers: Customer[]): void {
-  writeFileSync(getCustomersPath(), JSON.stringify(customers, null, 2), 'utf-8');
+export async function serverFindCustomerByEmail(email: string): Promise<Customer | null> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows: any[] = await sql`SELECT * FROM customers WHERE LOWER(email) = LOWER(${email})`;
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  const rewards: any[] = await sql`SELECT * FROM rewards WHERE customer_id = ${row.id} ORDER BY level`;
+  return rowToCustomer(row, rewards);
 }
 
-export function serverGetAllCustomers(): Customer[] {
-  return readCustomers().sort((a, b) => b.stamps - a.stamps);
+export async function serverFindCustomerById(id: string): Promise<Customer | null> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows: any[] = await sql`SELECT * FROM customers WHERE id = ${id}`;
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  const rewards: any[] = await sql`SELECT * FROM rewards WHERE customer_id = ${row.id} ORDER BY level`;
+  return rowToCustomer(row, rewards);
 }
 
-export function serverFindCustomerByEmail(email: string): Customer | null {
-  return readCustomers().find(c => c.email.toLowerCase() === email.toLowerCase()) ?? null;
-}
-
-export function serverFindCustomerById(id: string): Customer | null {
-  return readCustomers().find(c => c.id === id) ?? null;
-}
-
-export function serverCreateCustomer(name: string, email: string): Customer {
-  const customers = readCustomers();
-  const existing = customers.find(c => c.email.toLowerCase() === email.toLowerCase());
-
+export async function serverCreateCustomer(name: string, email: string): Promise<Customer> {
+  await ensureSchema();
+  const sql = getSql();
+  const existing = await serverFindCustomerByEmail(email);
   if (existing) {
-    if (existing.name !== name) existing.name = name;
-    existing.lastVisit = new Date().toISOString();
-    writeCustomers(customers);
+    if (existing.name !== name) {
+      await sql`UPDATE customers SET name = ${name} WHERE id = ${existing.id}`;
+      existing.name = name;
+    }
+    const now = new Date().toISOString();
+    await sql`UPDATE customers SET last_visit = ${now} WHERE id = ${existing.id}`;
+    existing.lastVisit = now;
     return existing;
   }
 
-  const customer: Customer = {
-    id: uuidv4(),
-    name,
-    email,
-    stamps: 0,
-    createdAt: new Date().toISOString(),
-    lastVisit: new Date().toISOString(),
-    rewards: [],
-  };
-  customers.push(customer);
-  writeCustomers(customers);
-  return customer;
+  const id = uuidv4();
+  const now = new Date().toISOString();
+  await sql`INSERT INTO customers (id, name, email, stamps, created_at, last_visit) VALUES (${id}, ${name}, ${email}, 0, ${now}, ${now})`;
+  return { id, name, email, stamps: 0, createdAt: now, lastVisit: now, rewards: [] };
 }
 
-export function serverUpdateCustomer(customer: Customer): void {
-  const customers = readCustomers();
-  const idx = customers.findIndex(c => c.id === customer.id);
-  if (idx >= 0) {
-    customers[idx] = customer;
-  } else {
-    customers.push(customer);
-  }
-  writeCustomers(customers);
+export async function serverUpdateCustomer(customer: Customer): Promise<void> {
+  await ensureSchema();
+  const sql = getSql();
+  await sql`UPDATE customers SET name = ${customer.name}, stamps = ${customer.stamps}, last_visit = ${customer.lastVisit} WHERE id = ${customer.id}`;
 }
 
-export function serverAdjustStamps(
+export async function serverAdjustStamps(
   customerId: string,
   delta: number,
-): { customer: Customer | null; newReward: Reward | null } {
-  const customers = readCustomers();
-  const idx = customers.findIndex(c => c.id === customerId);
-  if (idx < 0) return { customer: null, newReward: null };
+): Promise<{ customer: Customer | null; newReward: Reward | null }> {
+  await ensureSchema();
+  const sql = getSql();
+  const customer = await serverFindCustomerById(customerId);
+  if (!customer) return { customer: null, newReward: null };
 
-  const customer = customers[idx];
   const newStamps = Math.max(0, Math.min(30, customer.stamps + delta));
   if (newStamps === customer.stamps) return { customer, newReward: null };
 
   let newReward: Reward | null = null;
   if (delta > 0) {
-    const offer = serverGetOfferForLevel(newStamps);
+    const offer = await serverGetOfferForLevel(newStamps);
     if (offer && !customer.rewards.some(r => r.level === newStamps)) {
       newReward = {
         id: uuidv4(),
@@ -106,79 +124,71 @@ export function serverAdjustStamps(
         redeemed: false,
         unlockedAt: new Date().toISOString(),
       };
+      await sql`INSERT INTO rewards (id, customer_id, level, title, description, code, redeemed, unlocked_at) VALUES (${newReward.id}, ${customerId}, ${newReward.level}, ${newReward.title}, ${newReward.description}, ${newReward.code}, false, ${newReward.unlockedAt})`;
     }
   }
 
+  const now = new Date().toISOString();
+  await sql`UPDATE customers SET stamps = ${newStamps}, last_visit = ${now} WHERE id = ${customerId}`;
   customer.stamps = newStamps;
-  customer.lastVisit = new Date().toISOString();
+  customer.lastVisit = now;
   if (newReward) customer.rewards.push(newReward);
 
-  customers[idx] = customer;
-  writeCustomers(customers);
   return { customer, newReward };
 }
 
-export function serverRedeemReward(
+export async function serverRedeemReward(
   customerId: string,
   rewardId: string,
-): Customer | null {
-  const customers = readCustomers();
-  const idx = customers.findIndex(c => c.id === customerId);
-  if (idx < 0) return null;
-
-  const customer = customers[idx];
-  customer.rewards = customer.rewards.map(r =>
-    r.id === rewardId ? { ...r, redeemed: true, redeemedAt: new Date().toISOString() } : r,
-  );
-
-  customers[idx] = customer;
-  writeCustomers(customers);
-  return customer;
+): Promise<Customer | null> {
+  await ensureSchema();
+  const sql = getSql();
+  const now = new Date().toISOString();
+  await sql`UPDATE rewards SET redeemed = true, redeemed_at = ${now} WHERE id = ${rewardId} AND customer_id = ${customerId}`;
+  return serverFindCustomerById(customerId);
 }
 
-export function serverAddStamp(
+export async function serverAddStamp(
   customerId: string,
-): { customer: Customer | null; newReward: Reward | null } {
+): Promise<{ customer: Customer | null; newReward: Reward | null }> {
   return serverAdjustStamps(customerId, 1);
 }
 
 // --- Offers ---
 
-function readOffers(): Offer[] {
-  const path = getOffersPath();
-  if (!existsSync(path)) {
-    writeFileSync(path, JSON.stringify(DEFAULT_OFFERS, null, 2), 'utf-8');
+export async function serverGetOffers(): Promise<Offer[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows: any[] = await sql`SELECT * FROM offers ORDER BY level`;
+  if (rows.length === 0) {
+    for (const o of DEFAULT_OFFERS) {
+      await sql`INSERT INTO offers (level, title, description, icon) VALUES (${o.level}, ${o.title}, ${o.description}, ${o.icon}) ON CONFLICT (level) DO NOTHING`;
+    }
     return DEFAULT_OFFERS;
   }
-  try {
-    return JSON.parse(readFileSync(path, 'utf-8')) as Offer[];
-  } catch {
-    return DEFAULT_OFFERS;
-  }
+  return rows.map((r: any) => ({ level: r.level, title: r.title, description: r.description, icon: r.icon }));
 }
 
-function writeOffers(offers: Offer[]): void {
-  writeFileSync(getOffersPath(), JSON.stringify(offers.sort((a, b) => a.level - b.level), null, 2), 'utf-8');
+export async function serverGetOfferForLevel(level: number): Promise<Offer | undefined> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows: any[] = await sql`SELECT * FROM offers WHERE level = ${level}`;
+  if (rows.length === 0) return undefined;
+  const r = rows[0];
+  return { level: r.level, title: r.title, description: r.description, icon: r.icon };
 }
 
-export function serverGetOffers(): Offer[] {
-  return readOffers().sort((a, b) => a.level - b.level);
-}
-
-export function serverGetOfferForLevel(level: number): Offer | undefined {
-  return readOffers().find(o => o.level === level);
-}
-
-export function serverUpsertOffer(offer: Offer): Offer[] {
-  const offers = readOffers().filter(o => o.level !== offer.level);
-  offers.push(offer);
-  writeOffers(offers);
+export async function serverUpsertOffer(offer: Offer): Promise<Offer[]> {
+  await ensureSchema();
+  const sql = getSql();
+  await sql`INSERT INTO offers (level, title, description, icon) VALUES (${offer.level}, ${offer.title}, ${offer.description}, ${offer.icon}) ON CONFLICT (level) DO UPDATE SET title = ${offer.title}, description = ${offer.description}, icon = ${offer.icon}`;
   return serverGetOffers();
 }
 
-export function serverDeleteOffer(level: number): Offer[] {
-  const offers = readOffers().filter(o => o.level !== level);
-  writeOffers(offers);
+export async function serverDeleteOffer(level: number): Promise<Offer[]> {
+  await ensureSchema();
+  const sql = getSql();
+  await sql`DELETE FROM offers WHERE level = ${level}`;
   return serverGetOffers();
 }
 

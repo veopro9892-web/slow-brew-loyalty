@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverGetAllCustomers, serverCreateCustomer } from '@/lib/server-db';
 
 export async function GET() {
-  const customers = serverGetAllCustomers();
+  const customers = await serverGetAllCustomers();
   return NextResponse.json({ customers });
 }
 
@@ -14,6 +14,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Name and email required' }, { status: 400 });
   }
 
-  const customer = serverCreateCustomer(name.trim(), email.trim().toLowerCase());
+  const customer = await serverCreateCustomer(name.trim(), email.trim().toLowerCase());
   return NextResponse.json({ customer });
 }

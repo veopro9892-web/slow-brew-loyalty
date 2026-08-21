@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'customerId and rewardId required' }, { status: 400 });
   }
 
-  const customer = serverRedeemReward(customerId, rewardId);
+  const customer = await serverRedeemReward(customerId, rewardId);
   if (!customer) {
     return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
   }

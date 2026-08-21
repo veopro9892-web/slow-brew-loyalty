@@ -6,6 +6,6 @@ export async function GET(request: NextRequest) {
   const adminError = requireAdmin(request);
   if (adminError) return adminError;
 
-  const requests = getPendingRequests();
+  const requests = await getPendingRequests();
   return NextResponse.json({ requests });
 }

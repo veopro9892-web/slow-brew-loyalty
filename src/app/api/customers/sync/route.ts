@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Ensure this customer exists on the server (sync registration)
-  let serverCustomer = serverFindCustomerById(customerId);
+  let serverCustomer = await serverFindCustomerById(customerId);
   if (!serverCustomer) {
     // Customer registered locally but not on server yet — push them
-    serverCustomer = serverCreateCustomer(name || 'Unknown', email.toLowerCase());
+    serverCustomer = await serverCreateCustomer(name || 'Unknown', email.toLowerCase());
   }
 
   return NextResponse.json({ customer: serverCustomer });

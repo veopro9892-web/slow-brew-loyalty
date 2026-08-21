@@ -34,8 +34,8 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <p className="text-amber-700/70 text-sm">Welcome back,</p>
-        <h1 className="text-2xl font-bold text-amber-900">{customer.name}!</h1>
+        <p className="text-amber-700/70 text-sm font-body">Welcome back,</p>
+        <h1 className="text-2xl font-heading font-bold text-amber-900">{customer.name}!</h1>
       </motion.div>
 
       {/* Level Badge */}
@@ -61,8 +61,8 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
           <span className="text-3xl">
             {currentLevel > 0 ? LEVEL_CONFIGS[currentLevel - 1].icon : '☕'}
           </span>
-          <span className="text-xl font-bold text-amber-900">Lv.{currentLevel}</span>
-          <span className="text-[10px] text-amber-700/70">
+          <span className="text-xl font-heading font-bold text-amber-900">Lv.{currentLevel}</span>
+          <span className="text-[10px] text-amber-700/70 font-body">
             {currentLevel > 0 ? LEVEL_CONFIGS[currentLevel - 1].title : 'New Brewer'}
           </span>
         </div>
@@ -73,11 +73,11 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center bg-gradient-to-r from-amber-100 to-amber-50 rounded-2xl p-3"
+          className="text-center glass-amber rounded-2xl p-4 shadow-depth-sm"
         >
-          <p className="text-xs text-amber-700/70">Next reward in</p>
-          <p className="text-2xl font-bold text-amber-800">{stampsToNext} visit{stampsToNext > 1 ? 's' : ''}</p>
-          <p className="text-sm text-amber-700">
+          <p className="text-xs text-amber-700/70 font-body">Next reward in</p>
+          <p className="text-2xl font-heading font-bold text-amber-800">{stampsToNext} visit{stampsToNext > 1 ? 's' : ''}</p>
+          <p className="text-sm text-amber-700 font-body">
             {nextOffer.icon} {nextOffer.title}
           </p>
         </motion.div>
@@ -99,10 +99,10 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl p-5 shadow-lg shadow-amber-900/10 border border-amber-100"
+        className="glass rounded-3xl p-5 shadow-depth-lg"
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold text-amber-800">
+          <h3 className="text-sm font-heading font-semibold text-amber-800">
             Card {currentPage + 1} of 4
           </h3>
           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
@@ -183,15 +183,22 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
               ✅ Stamp Collected!
             </motion.div>
           ) : stampStatus === 'waiting' ? (
-            <div className="w-full py-4 rounded-2xl font-bold text-lg bg-blue-100 text-blue-800 shadow-lg text-center space-y-2">
+            <div className="w-full py-4 rounded-2xl font-heading font-bold text-lg glass-dark text-white text-center space-y-2">
               <div>⏳ Waiting for barista approval...</div>
-              <div className="bg-blue-50 rounded-xl px-4 py-3 border-2 border-dashed border-blue-300">
-                <p className="text-xs text-blue-600 mb-1">Show this code to the barista:</p>
-                <p className="text-3xl font-mono font-bold text-blue-900 tracking-[0.3em]">{requestToken}</p>
+              <div className="bg-white/10 rounded-xl px-4 py-3 border-2 border-dashed border-white/20">
+                <p className="text-xs text-white/60 mb-1 font-body">Show this code to the barista:</p>
+                <p className="text-3xl font-mono font-bold text-amber-300 tracking-[0.3em]">{requestToken}</p>
               </div>
             </div>
           ) : stampStatus === 'requesting' ? (
-            <div className="w-full py-4 rounded-2xl font-bold text-lg bg-gray-200 text-gray-500 shadow-none text-center">
+            <div className="w-full py-4 rounded-2xl font-heading font-bold text-lg glass text-amber-600/60 text-center">
+              <motion.span
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="inline-block mr-2"
+              >
+                ☕
+              </motion.span>
               Sending request...
             </div>
           ) : stampStatus === 'denied' ? (
@@ -205,11 +212,12 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
           ) : (
             <motion.button
               onClick={onRequestStamp}
-              whileTap={{ scale: 0.92 }}
-              whileHover={{ scale: 1.03 }}
-              className="w-full py-4 rounded-2xl font-bold text-lg shadow-xl
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              className="w-full py-4 rounded-2xl font-heading font-bold text-lg
                          bg-gradient-to-r from-amber-700 to-amber-800 text-white
-                         shadow-amber-900/30 hover:from-amber-600 hover:to-amber-700 transition-all"
+                         shadow-depth-lg hover:shadow-depth-xl hover:from-amber-600 hover:to-amber-700
+                         transition-all active:shadow-depth-sm"
             >
               <span className="flex items-center justify-center gap-2">
                 ☕ Request Stamp
@@ -223,8 +231,8 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
       <motion.button
         onClick={() => setShowRewards(!showRewards)}
         whileTap={{ scale: 0.97 }}
-        className="w-full py-3 rounded-2xl border-2 border-amber-200 text-amber-800 font-medium
-                   hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
+        className="w-full py-3 rounded-2xl glass-amber text-amber-800 font-heading font-medium
+                   shadow-depth-sm hover:shadow-depth-md transition-all flex items-center justify-center gap-2"
       >
         🎁 My Rewards ({customer.rewards.length})
         <motion.span animate={{ rotate: showRewards ? 180 : 0 }}>▼</motion.span>
@@ -297,8 +305,8 @@ export default function StampCard({ customer, offers, onRequestStamp, justStampe
       </AnimatePresence>
 
       {/* Progress milestones */}
-      <div className="bg-white/60 rounded-2xl p-4">
-        <h3 className="text-sm font-semibold text-amber-800 mb-3">Journey Progress</h3>
+      <div className="glass-amber rounded-2xl p-4 shadow-depth-sm">
+        <h3 className="text-sm font-heading font-semibold text-amber-800 mb-3">Journey Progress</h3>
         <div className="relative">
           <div className="h-3 bg-amber-100 rounded-full overflow-hidden">
             <motion.div

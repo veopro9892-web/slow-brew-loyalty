@@ -194,22 +194,25 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-amber-100 relative overflow-hidden">
-      {/* Background decoration */}
+    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/50 to-amber-100 relative overflow-hidden">
+      {/* Background decoration with subtle orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-10 left-10 text-6xl opacity-5 rotate-12">☕</div>
-        <div className="absolute top-40 right-5 text-4xl opacity-5 -rotate-12">🫖</div>
-        <div className="absolute bottom-20 left-20 text-5xl opacity-5 rotate-45">☕</div>
-        <div className="absolute bottom-40 right-20 text-3xl opacity-5">🍪</div>
-        <div className="absolute top-1/2 left-1/3 text-4xl opacity-5">🥐</div>
+        <div className="absolute -top-32 -left-32 w-64 h-64 bg-amber-200/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 -right-20 w-48 h-48 bg-orange-200/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 left-1/4 w-56 h-56 bg-amber-100/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 left-10 text-6xl opacity-[0.03] rotate-12">☕</div>
+        <div className="absolute top-40 right-5 text-4xl opacity-[0.03] -rotate-12">🫖</div>
+        <div className="absolute bottom-20 left-20 text-5xl opacity-[0.03] rotate-45">☕</div>
+        <div className="absolute bottom-40 right-20 text-3xl opacity-[0.03]">🍪</div>
+        <div className="absolute top-1/2 left-1/3 text-4xl opacity-[0.03]">🥐</div>
       </div>
 
       {/* Main content */}
       <div className="relative z-10 px-5 py-8 pb-20">
         {/* Logo */}
         <div className="text-center mb-6">
-          <h1 className="text-lg font-bold text-amber-800 tracking-wider">SLOW BREW</h1>
-          <div className="w-12 h-0.5 bg-amber-400 mx-auto mt-1"></div>
+          <h1 className="text-lg font-heading font-bold text-amber-800 tracking-wider">SLOW BREW</h1>
+          <div className="w-12 h-0.5 bg-gradient-to-r from-amber-400 to-amber-600 mx-auto mt-1 rounded-full"></div>
         </div>
 
         {!customer ? (

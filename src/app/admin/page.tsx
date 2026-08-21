@@ -297,30 +297,39 @@ export default function AdminPage() {
   // --- Login Screen ---
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center p-5">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 flex items-center justify-center p-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-800 rounded-3xl p-8 max-w-sm w-full border border-gray-700"
+          className="glass-dark rounded-3xl p-8 max-w-sm w-full shadow-depth-lg"
         >
           <div className="text-center mb-6">
-            <span className="text-4xl">🔐</span>
-            <h1 className="text-2xl font-bold text-white mt-2">Admin Panel</h1>
-            <p className="text-gray-400 text-sm">Slow Brew Loyalty</p>
+            <motion.span
+              className="text-4xl inline-block"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              🔐
+            </motion.span>
+            <h1 className="text-2xl font-heading font-bold text-white mt-2">Admin Panel</h1>
+            <p className="text-gray-400 text-sm font-body">Slow Brew Loyalty</p>
           </div>
           <input
             type="password"
+            inputMode="numeric"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="Enter PIN"
-            className="w-full px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600
-                       focus:border-amber-500 focus:outline-none text-center text-2xl tracking-[0.5em]"
+            className="w-full px-4 py-3 rounded-xl bg-white/5 text-white border border-white/10
+                       focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 transition-all
+                       text-center text-2xl tracking-[0.5em] font-body"
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
           />
           <button
             onClick={handleLogin}
-            className="w-full mt-4 py-3 rounded-xl bg-amber-700 text-white font-semibold
-                       hover:bg-amber-600 transition-colors"
+            className="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800
+                       text-white font-heading font-semibold shadow-depth-md
+                       hover:from-amber-600 hover:to-amber-700 transition-all"
           >
             Login
           </button>
@@ -330,7 +339,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 p-5">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-5">
       <div className="max-w-2xl mx-auto">
         {/* Toast notifications */}
         <div className="fixed top-4 right-4 z-50 space-y-2">
@@ -356,21 +365,21 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">☕ Slow Brew Admin</h1>
-            <p className="text-gray-400 text-sm">{customers.length} total customers</p>
+            <h1 className="text-2xl font-heading font-bold text-white">☕ Slow Brew Admin</h1>
+            <p className="text-gray-400 text-sm font-body">{customers.length} total customers</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportExcel}
-              className="px-4 py-2 rounded-xl bg-green-700 text-white text-sm font-medium
-                         hover:bg-green-600 transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-green-600 to-green-700 text-white text-sm font-heading font-medium
+                         hover:from-green-500 hover:to-green-600 transition-all shadow-depth-sm hover:shadow-depth-md flex items-center gap-1.5"
             >
               📊 Export Excel
             </button>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 rounded-xl bg-gray-700 text-gray-300 text-sm
-                         hover:bg-gray-600 transition-colors"
+              className="px-4 py-2 rounded-xl glass-dark text-gray-300 text-sm font-heading
+                         hover:bg-white/10 transition-all shadow-depth-sm"
             >
               Logout
             </button>

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Customer, Offer, DEFAULT_LEVEL_OFFER_ICON } from '@/lib/types';
 import { StampRequest } from '@/lib/stamp-request';
+import * as XLSX from 'xlsx';
 
 interface Toast {
   id: number;
@@ -219,6 +220,72 @@ export default function AdminPage() {
     }
   };
 
+  // --- Export to Excel ---
+  const handleExportExcel = () => {
+    if (customers.length === 0) {
+      showToast('No customers to export', 'error');
+      return;
+    }
+
+    // Sheet 1: Customers
+    const customerRows = customers.map(c => ({
+      Name: c.name,
+      Email: c.email,
+      Stamps: c.stamps,
+      Level: c.stamps,
+      'Rewards Unlocked': c.rewards.length,
+      'Rewards Redeemed': c.rewards.filter(r => r.redeemed).length,
+      'Active Rewards': c.rewards.filter(r => !r.redeemed).length,
+      'Joined': new Date(c.createdAt).toLocaleDateString(),
+      'Last Visit': new Date(c.lastVisit).toLocaleDateString(),
+    }));
+
+    // Sheet 2: Rewards detail
+    const rewardRows: Record<string, string | number | boolean>[] = [];
+    customers.forEach(c => {
+      c.rewards.forEach(r => {
+        rewardRows.push({
+          'Customer Name': c.name,
+          'Customer Email': c.email,
+          'Level': r.level,
+          'Reward Title': r.title,
+          'Description': r.description,
+          'Code': r.code,
+          'Redeemed': r.redeemed ? 'Yes' : 'No',
+          'Unlocked At': r.unlockedAt ? new Date(r.unlockedAt).toLocaleDateString() : '',
+          'Redeemed At': r.redeemedAt ? new Date(r.redeemedAt).toLocaleDateString() : '',
+        });
+      });
+    });
+
+    // Sheet 3: Summary stats
+    const summaryRows = [
+      { Metric: 'Total Customers', Value: customers.length },
+      { Metric: 'Total Visits (Stamps)', Value: customers.reduce((s, c) => s + c.stamps, 0) },
+      { Metric: 'Active Rewards', Value: customers.reduce((s, c) => s + c.rewards.filter(r => !r.redeemed).length, 0) },
+      { Metric: 'Redeemed Rewards', Value: customers.reduce((s, c) => s + c.rewards.filter(r => r.redeemed).length, 0) },
+      { Metric: 'Export Date', Value: new Date().toLocaleDateString() },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(customerRows);
+    const ws2 = XLSX.utils.json_to_sheet(rewardRows.length > 0 ? rewardRows : [{ 'Customer Name': 'No rewards yet' }]);
+    const ws3 = XLSX.utils.json_to_sheet(summaryRows);
+
+    // Auto-fit column widths
+    [ws1, ws2, ws3].forEach(ws => {
+      const colWidths = Object.keys(XLSX.utils.sheet_to_json(ws, { header: 1 })[0] || {}).map((key) => ({ wch: Math.max(key.length + 2, 14) }));
+      ws['!cols'] = colWidths;
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Customers');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Rewards');
+    XLSX.utils.book_append_sheet(wb, ws3, 'Summary');
+
+    XLSX.writeFile(wb, `slowbrew-data-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast(`Exported ${customers.length} customers to Excel!`);
+  };
+
   const filteredCustomers = customers.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -291,13 +358,22 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-white">☕ Slow Brew Admin</h1>
             <p className="text-gray-400 text-sm">{customers.length} total customers</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 rounded-xl bg-gray-700 text-gray-300 text-sm
-                       hover:bg-gray-600 transition-colors"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportExcel}
+              className="px-4 py-2 rounded-xl bg-green-700 text-white text-sm font-medium
+                         hover:bg-green-600 transition-colors flex items-center gap-1.5"
+            >
+              📊 Export Excel
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-xl bg-gray-700 text-gray-300 text-sm
+                         hover:bg-gray-600 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Pending Stamp Requests */}

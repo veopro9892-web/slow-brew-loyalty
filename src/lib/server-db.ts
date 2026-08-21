@@ -72,7 +72,7 @@ export async function serverFindCustomerById(id: string): Promise<Customer | nul
   return rowToCustomer(row, rewards);
 }
 
-export async function serverCreateCustomer(name: string, email: string): Promise<Customer> {
+export async function serverCreateCustomer(name: string, email: string, preferredId?: string): Promise<Customer> {
   await ensureSchema();
   const sql = getSql();
   const existing = await serverFindCustomerByEmail(email);
@@ -87,7 +87,7 @@ export async function serverCreateCustomer(name: string, email: string): Promise
     return existing;
   }
 
-  const id = uuidv4();
+  const id = preferredId || uuidv4();
   const now = new Date().toISOString();
   await sql`INSERT INTO customers (id, name, email, stamps, created_at, last_visit) VALUES (${id}, ${name}, ${email}, 0, ${now}, ${now})`;
   return { id, name, email, stamps: 0, createdAt: now, lastVisit: now, rewards: [] };

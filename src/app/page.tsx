@@ -51,7 +51,8 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         const serverCustomer = data.customers?.find((c: Customer) => c.id === cust.id);
-        if (serverCustomer && serverCustomer.stamps !== cust.stamps) {
+        if (serverCustomer) {
+          // Always update local data from server to stay in sync
           setCustomer(serverCustomer);
           localStorage.setItem('slowbrew_customer', JSON.stringify(serverCustomer));
         }
@@ -62,12 +63,19 @@ export default function Home() {
   // Sync on mount and periodically
   useEffect(() => {
     if (!customer) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     syncWithServer(customer);
-    const id = setInterval(() => syncWithServer(customer), 30000);
+    const id = setInterval(() => {
+      // Read current customer from localStorage to avoid stale closure
+      const raw = localStorage.getItem('slowbrew_customer');
+      if (raw) {
+        try {
+          const current = JSON.parse(raw) as Customer;
+          syncWithServer(current);
+        } catch { /* ignore */ }
+      }
+    }, 30000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [customer?.id, syncWithServer]);
 
   const processApprovedStamp = useCallback(async (serverReward?: Reward | null) => {
     if (!customer) return;
@@ -147,6 +155,15 @@ export default function Home() {
 
     setStampStatus('requesting');
     try {
+      // First, ensure the customer is synced to the server
+      try {
+        await fetch('/api/customers/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId: customer.id, name: customer.name, email: customer.email }),
+        });
+      } catch { /* sync failed, try anyway */ }
+
       const res = await fetch('/api/stamps/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

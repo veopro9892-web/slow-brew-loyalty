@@ -12,8 +12,9 @@ interface RegisterFormProps {
 
 export default function RegisterForm({ onRegistered }: RegisterFormProps) {
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [step, setStep] = useState<'name' | 'email'>('name');
+  const [step, setStep] = useState<'name' | 'phone' | 'email'>('name');
   const [error, setError] = useState('');
 
   const handleNameNext = () => {
@@ -21,6 +22,14 @@ export default function RegisterForm({ onRegistered }: RegisterFormProps) {
       setError('Please enter your name');
       return;
     }
+    setError('');
+    playClickSound();
+    triggerHaptic('light');
+    setStep('phone');
+  };
+
+  const handlePhoneNext = () => {
+    // Phone is optional — just move to email
     setError('');
     playClickSound();
     triggerHaptic('light');
@@ -37,12 +46,14 @@ export default function RegisterForm({ onRegistered }: RegisterFormProps) {
     playClickSound();
     triggerHaptic('medium');
 
+    const phoneValue = phone.trim() || undefined;
+
     // Try server first, fall back to local
     try {
       const res = await fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), phone: phoneValue }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -53,6 +64,7 @@ export default function RegisterForm({ onRegistered }: RegisterFormProps) {
     } catch { /* offline — use local */ }
 
     const customer = createCustomer(name.trim(), email.trim().toLowerCase());
+    if (phoneValue) customer.phone = phoneValue;
     onRegistered(customer);
   };
 
@@ -120,7 +132,7 @@ export default function RegisterForm({ onRegistered }: RegisterFormProps) {
           </motion.div>
         )}
 
-        {step === 'email' && (
+        {step === 'phone' && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -128,6 +140,61 @@ export default function RegisterForm({ onRegistered }: RegisterFormProps) {
           >
             <p className="text-amber-800 font-medium">
               Hey {name}! 👋
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-amber-900 mb-2">
+                Phone number <span className="text-amber-500 font-normal">(optional)</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                autoFocus
+                className="w-full px-4 py-3 rounded-2xl border-2 border-amber-200
+                           bg-white/80 text-amber-900 placeholder-amber-400
+                           focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200
+                           transition-all text-lg"
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handlePhoneNext())}
+              />
+            </div>
+            {error && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-sm">
+                {error}
+              </motion.p>
+            )}
+            <div className="flex gap-3">
+              <motion.button
+                type="button"
+                onClick={() => { setStep('name'); setError(''); }}
+                whileTap={{ scale: 0.95 }}
+                className="py-3 px-5 rounded-2xl border-2 border-amber-300 text-amber-800 font-medium
+                           hover:bg-amber-50 transition-colors"
+              >
+                ←
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={handlePhoneNext}
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                className="flex-1 py-3 rounded-2xl bg-amber-800 text-white font-semibold text-lg
+                           hover:bg-amber-700 transition-colors shadow-lg shadow-amber-900/20"
+              >
+                {phone.trim() ? 'Next →' : 'Skip →'}
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 'email' && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-4"
+          >
+            <p className="text-amber-800 font-medium">
+              Almost there, {name}! 🎉
             </p>
             <div>
               <label className="block text-sm font-medium text-amber-900 mb-2">
@@ -153,7 +220,7 @@ export default function RegisterForm({ onRegistered }: RegisterFormProps) {
             <div className="flex gap-3">
               <motion.button
                 type="button"
-                onClick={() => { setStep('name'); setError(''); }}
+                onClick={() => { setStep('phone'); setError(''); }}
                 whileTap={{ scale: 0.95 }}
                 className="py-3 px-5 rounded-2xl border-2 border-amber-300 text-amber-800 font-medium
                            hover:bg-amber-50 transition-colors"

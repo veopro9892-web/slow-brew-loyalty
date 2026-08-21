@@ -24,11 +24,18 @@ export async function ensureSchema() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
+      phone TEXT DEFAULT '',
       stamps INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       last_visit TEXT NOT NULL
     )
   `;
+
+  // Add phone column if missing (migration for existing DBs)
+  try {
+    await sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT ''`;
+  } catch { /* column already exists */ }
+
 
   await sql`
     CREATE TABLE IF NOT EXISTS rewards (

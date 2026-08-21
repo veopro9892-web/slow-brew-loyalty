@@ -9,6 +9,7 @@ function rowToCustomer(row: any, rewards: any[]): Customer {
     id: row.id,
     name: row.name,
     email: row.email,
+    phone: row.phone || undefined,
     stamps: row.stamps,
     createdAt: row.created_at,
     lastVisit: row.last_visit,
@@ -72,7 +73,7 @@ export async function serverFindCustomerById(id: string): Promise<Customer | nul
   return rowToCustomer(row, rewards);
 }
 
-export async function serverCreateCustomer(name: string, email: string, preferredId?: string): Promise<Customer> {
+export async function serverCreateCustomer(name: string, email: string, preferredId?: string, phone?: string): Promise<Customer> {
   await ensureSchema();
   const sql = getSql();
   const existing = await serverFindCustomerByEmail(email);
@@ -80,6 +81,10 @@ export async function serverCreateCustomer(name: string, email: string, preferre
     if (existing.name !== name) {
       await sql`UPDATE customers SET name = ${name} WHERE id = ${existing.id}`;
       existing.name = name;
+    }
+    if (phone && existing.phone !== phone) {
+      await sql`UPDATE customers SET phone = ${phone} WHERE id = ${existing.id}`;
+      existing.phone = phone;
     }
     const now = new Date().toISOString();
     await sql`UPDATE customers SET last_visit = ${now} WHERE id = ${existing.id}`;
@@ -89,8 +94,9 @@ export async function serverCreateCustomer(name: string, email: string, preferre
 
   const id = preferredId || uuidv4();
   const now = new Date().toISOString();
-  await sql`INSERT INTO customers (id, name, email, stamps, created_at, last_visit) VALUES (${id}, ${name}, ${email}, 0, ${now}, ${now})`;
-  return { id, name, email, stamps: 0, createdAt: now, lastVisit: now, rewards: [] };
+  const phoneVal = phone || '';
+  await sql`INSERT INTO customers (id, name, email, phone, stamps, created_at, last_visit) VALUES (${id}, ${name}, ${email}, ${phoneVal}, 0, ${now}, ${now})`;
+  return { id, name, email, phone: phone || undefined, stamps: 0, createdAt: now, lastVisit: now, rewards: [] };
 }
 
 export async function serverUpdateCustomer(customer: Customer): Promise<void> {

@@ -231,6 +231,7 @@ export default function AdminPage() {
     const customerRows = customers.map(c => ({
       Name: c.name,
       Email: c.email,
+      Phone: c.phone || '',
       Stamps: c.stamps,
       Level: c.stamps,
       'Rewards Unlocked': c.rewards.length,
@@ -642,6 +643,9 @@ export default function AdminPage() {
                     <div>
                       <p className="text-white font-medium">{customer.name}</p>
                       <p className="text-gray-500 text-xs">{customer.email}</p>
+                      {customer.phone && (
+                        <p className="text-gray-500 text-xs">📱 {customer.phone}</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -693,6 +697,12 @@ export default function AdminPage() {
                         <p className="text-gray-300">{new Date(customer.lastVisit).toLocaleDateString()}</p>
                       </div>
                     </div>
+                    {customer.phone && (
+                      <div className="text-sm">
+                        <p className="text-gray-500">Phone</p>
+                        <p className="text-gray-300">📱 {customer.phone}</p>
+                      </div>
+                    )}
 
                     <div>
                       <div className="flex justify-between text-xs text-gray-500 mb-1">

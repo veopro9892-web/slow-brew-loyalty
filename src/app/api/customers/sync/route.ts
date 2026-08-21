@@ -3,7 +3,7 @@ import { serverCreateCustomer, serverFindCustomerById } from '@/lib/server-db';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { customerId, name, email } = body;
+  const { customerId, name, email, phone } = body;
 
   if (!customerId || !email) {
     return NextResponse.json({ error: 'customerId and email required' }, { status: 400 });
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   let serverCustomer = await serverFindCustomerById(customerId);
   if (!serverCustomer) {
     // Customer registered locally but not on server yet — push them with the same ID
-    serverCustomer = await serverCreateCustomer(name || 'Unknown', email.toLowerCase(), customerId);
+    serverCustomer = await serverCreateCustomer(name || 'Unknown', email.toLowerCase(), customerId, phone);
   }
 
   return NextResponse.json({ customer: serverCustomer });

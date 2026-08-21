@@ -4,7 +4,7 @@ const ADMIN_SESSION_COOKIE = 'slowbrew_admin_session';
 const ADMIN_SESSION_VALUE = 'authenticated';
 
 export function getAdminPin(): string {
-  return process.env.ADMIN_PIN || '1234';
+  return process.env.ADMIN_PIN || '9892';
 }
 
 export function isAdminSession(req: NextRequest): boolean {

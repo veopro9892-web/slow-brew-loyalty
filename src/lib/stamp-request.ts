@@ -75,8 +75,9 @@ export async function denyRequest(token: string): Promise<StampRequest | null> {
 export async function getRequestByCustomerId(customerId: string): Promise<StampRequest | null> {
   await ensureSchema();
   const sql = getSql();
-  // Look for pending first, then recently approved/denied (within last 60s)
-  const rows: any[] = await sql`SELECT * FROM stamp_requests WHERE customer_id = ${customerId} AND (status = 'pending' OR (status IN ('approved', 'denied') AND resolved_at > NOW() - INTERVAL '60 seconds')) ORDER BY created_at DESC LIMIT 1`;
+  // Get the most recent request — pending OR recently resolved.
+  // The client handles state transitions, so we just return whatever is newest.
+  const rows: any[] = await sql`SELECT * FROM stamp_requests WHERE customer_id = ${customerId} AND (status = 'pending' OR status IN ('approved', 'denied')) ORDER BY created_at DESC LIMIT 1`;
   if (rows.length === 0) return null;
   return rowToRequest(rows[0]);
 }

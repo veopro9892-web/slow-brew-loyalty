@@ -37,6 +37,12 @@ export default function Home() {
   const [requestToken, setRequestToken] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Ref to always have the latest customer ID without stale closures
+  const customerIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    customerIdRef.current = customer?.id ?? null;
+  }, [customer?.id]);
+
   // Sync with server on load and periodically
   const syncWithServer = useCallback(async (cust: Customer) => {
     try {
@@ -44,7 +50,7 @@ export default function Home() {
       await fetch('/api/customers/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId: cust.id, name: cust.name, email: cust.email }),
+        body: JSON.stringify({ customerId: cust.id, name: cust.name, email: cust.email, phone: cust.phone }),
       });
       // Pull latest from server
       const res = await fetch('/api/customers');
@@ -77,15 +83,17 @@ export default function Home() {
     return () => clearInterval(id);
   }, [customer?.id, syncWithServer]);
 
+  // Process approved stamp — uses refs to avoid stale closures
   const processApprovedStamp = useCallback(async (serverReward?: Reward | null) => {
-    if (!customer) return;
+    const custId = customerIdRef.current;
+    if (!custId) return;
 
     // Pull latest from server after approval
     try {
       const res = await fetch('/api/customers');
       if (res.ok) {
         const data = await res.json();
-        const updated = data.customers?.find((c: Customer) => c.id === customer.id);
+        const updated = data.customers?.find((c: Customer) => c.id === custId);
         if (updated) {
           setCustomer(updated);
           localStorage.setItem('slowbrew_customer', JSON.stringify(updated));
@@ -125,15 +133,18 @@ export default function Home() {
 
     // Fallback: just reset status
     setStampStatus('idle');
-  }, [customer]);
+  }, []); // No dependencies — uses refs
 
-  // Poll for approval status
+  // Poll for approval status — stable, only re-runs when stampStatus changes
   useEffect(() => {
-    if (stampStatus !== 'waiting' || !customer) return;
+    if (stampStatus !== 'waiting') return;
 
     pollRef.current = setInterval(async () => {
+      const custId = customerIdRef.current;
+      if (!custId) return;
+
       try {
-        const res = await fetch(`/api/stamps/status?customerId=${customer.id}`);
+        const res = await fetch(`/api/stamps/status?customerId=${custId}`);
         const data = await res.json();
         if (data.request?.status === 'approved') {
           clearInterval(pollRef.current!);
@@ -144,11 +155,11 @@ export default function Home() {
           setStampStatus('denied');
           setTimeout(() => setStampStatus('idle'), 2000);
         }
-      } catch { /* retry */ }
+      } catch { /* retry next tick */ }
     }, 2000);
 
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [stampStatus, customer, processApprovedStamp]);
+  }, [stampStatus, processApprovedStamp]);
 
   const handleRequestStamp = useCallback(async () => {
     if (!customer || customer.stamps >= 30) return;
@@ -160,7 +171,7 @@ export default function Home() {
         await fetch('/api/customers/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customerId: customer.id, name: customer.name, email: customer.email }),
+          body: JSON.stringify({ customerId: customer.id, name: customer.name, email: customer.email, phone: customer.phone }),
         });
       } catch { /* sync failed, try anyway */ }
 
